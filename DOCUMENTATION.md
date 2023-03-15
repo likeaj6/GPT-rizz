@@ -31,7 +31,7 @@ Seeing these profiles and thus '*breaking the first barrier of matching*' is why
   * [Sending Songs](#sending-songs)
   * [Sending Socials](#sending-socials)
   * [Unmatching](#unmatching)
-* [JUST LET ME START ALREADY YES PLS TY](#just-let-me-start-already-yes-pls-ty)
+* [Getting Started](#just-let-me-start-already-yes-pls-ty)
 
 # Creating a Session
 First thing you'll have to do is import Session from tinderbot.session and create an active session.</br>
@@ -41,6 +41,19 @@ from tinderbot.session import Session
 
 session = Session()
 ```
+**Optional parameters**</br>
+`headless`: *boolean*</br>
+`store_session`: *boolean*</br>
+`proxy`: *string*</br>
+
+**Example usage**</br>
+***headless*** might not work properly, so recommended to leave it on False. </br>
+***store_session*** will store your cookies in a directory, so next time you don't need to login again. </br>
+***proxy*** can be added using IP:PORT or HOST:PORT </br>
+```
+session = Session(headless=False, store_session=True, proxy="23.23.23.23:3128") 
+```
+
 ## Logging in to Tinder
 Logging in can be done in one of the following ways.
 1. Using your Google-account: *Your email must be verified*
@@ -62,7 +75,7 @@ session.login_using_google("myemail@gmail.com", "password123")
 session.login_using_facebook("myemail@gmail.com", "password123")
 ```
 
-### Login by SMS
+### Login by SMS (DEPRECATED)
 ```
 session.login_using_sms(country, phone_number)
 ```
@@ -186,11 +199,13 @@ session.set_global(True)
 
 # Actions
 ## Liking Geomatches
-Liking method has 3 optional parameters.</br>
+Liking method has 4 optional parameters.</br>
 The amount, which is by default equal to 1, specifies how many times the like button should be pressed.</br>
 The ratio, which is by default 100%, is the chance the bot should press like or else dislike.</br>
 The sleep, which is by default 0 seconds, is the amount of seconds the bot should sleep between likes.</br>
-These last 2 should make sure you don't get banned. :)
+The randomize_sleep, which is by default True, if set to True, adds randomization to the provided time between likes.</br>
+
+These last 3 should make sure you don't get banned. :)
 ```
 session.like()
 ```
@@ -337,4 +352,4 @@ If you feel like you just want to dive right into the code and get started right
 4. Run the code.
 
 If you want to scrape as much *geomatches* as possible,</br>
-then [scraper.py](https://github.com/frederikme/TinderBotz/blob/master/scraper.py) will be suiting your needs better.
+then [scraper.py](https://github.com/frederikme/TinderBotz/blob/master/scraper.py) will suit your needs better.

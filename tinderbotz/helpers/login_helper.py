@@ -1,7 +1,7 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, StaleElementReferenceException, NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from tinderbotz.helpers.xpaths import content
 import time
@@ -19,7 +19,7 @@ class LoginHelper:
             xpath = f'{content}/div/div[1]/div/main/div[1]/div/div/div/div/header/div/div[2]/div[2]/a'
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.XPATH, xpath)))
-            button = self.browser.find_element_by_xpath(xpath)
+            button = self.browser.find_element(By.XPATH, xpath)
             button.click()
             time.sleep(3)
 
@@ -38,14 +38,14 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.XPATH, xpath)))
 
-            self.browser.find_element_by_xpath(xpath).click()
+            self.browser.find_element(By.XPATH, xpath).click()
 
         except TimeoutException:
             self._exit_by_time_out()
         except StaleElementReferenceException:
             # page was still loading when attempting to click facebook login
             time.sleep(4)
-            self.browser.find_element_by_xpath(xpath).click()
+            self.browser.find_element(By.XPATH, xpath).click()
 
         if not self._change_focus_to_pop_up():
             print("FAILED TO CHANGE FOCUS TO POPUP")
@@ -57,7 +57,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath)))
 
-            emailfield = self.browser.find_element_by_xpath(xpath)
+            emailfield = self.browser.find_element(By.XPATH, xpath)
             emailfield.send_keys(email)
             emailfield.send_keys(Keys.ENTER)
             # sleeping 3 seconds for passwordfield to come through
@@ -70,7 +70,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath)))
 
-            pwdfield = self.browser.find_element_by_xpath(xpath)
+            pwdfield = self.browser.find_element(By.XPATH, xpath)
             pwdfield.send_keys(password)
             pwdfield.send_keys(Keys.ENTER)
 
@@ -89,13 +89,13 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.XPATH, xpath)))
 
-            self.browser.find_element_by_xpath(xpath).click()
+            self.browser.find_element(By.XPATH, xpath).click()
         except TimeoutException:
             self._exit_by_time_out()
         except StaleElementReferenceException:
             # page was still loading when attempting to click facebook login
             time.sleep(4)
-            self.browser.find_element_by_xpath(xpath).click()
+            self.browser.find_element(By.XPATH, xpath).click()
 
         if not self._change_focus_to_pop_up():
             print("FAILED TO CHANGE FOCUS TO POPUP")
@@ -108,7 +108,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
             EC.presence_of_element_located((By.XPATH, xpath_cookies)))
 
-            self.browser.find_element_by_xpath(xpath_cookies).click()
+            self.browser.find_element(By.XPATH, xpath_cookies).click()
         except TimeoutException:
             # Not everyone might have the cookie banner so let's just continue then
             pass
@@ -121,13 +121,13 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath_email)))
 
-            emailfield = self.browser.find_element_by_xpath(xpath_email)
+            emailfield = self.browser.find_element(By.XPATH, xpath_email)
             emailfield.send_keys(email)
 
-            pwdfield = self.browser.find_element_by_xpath(xpath_password)
+            pwdfield = self.browser.find_element(By.XPATH, xpath_password)
             pwdfield.send_keys(password)
 
-            loginbutton = self.browser.find_element_by_xpath(xpath_button)
+            loginbutton = self.browser.find_element(By.XPATH, xpath_button)
             loginbutton.click()
 
         except TimeoutException:
@@ -145,7 +145,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.XPATH, xpath)))
 
-            btn = self.browser.find_element_by_xpath(xpath)
+            btn = self.browser.find_element(By.XPATH, xpath)
             btn.click()
         except TimeoutException:
             self._exit_by_time_out()
@@ -158,7 +158,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                     (By.XPATH, xpath)))
 
-            field = self.browser.find_element_by_xpath(xpath)
+            field = self.browser.find_element(By.XPATH, xpath)
             field.send_keys(phone_number)
             field.send_keys(Keys.ENTER)
 
@@ -178,13 +178,13 @@ class LoginHelper:
         xpath = '//div[@aria-describedby="phoneErrorMessage"]/div/div'
         WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
             (By.XPATH, xpath)))
-        btn = self.browser.find_element_by_xpath(xpath)
+        btn = self.browser.find_element(By.XPATH, xpath)
         btn.click()
 
-        els = self.browser.find_elements_by_xpath('//div')
+        els = self.browser.find_elements(By.XPATH, '//div')
         for el in els:
             try:
-                span = el.find_element_by_xpath('.//span')
+                span = el.find_element(By.XPATH, './/span')
                 if span.text.lower() == country.lower():
                     print("clicked")
                     el.click()
@@ -199,10 +199,30 @@ class LoginHelper:
         return 'app' in self.browser.current_url
 
     def _handle_popups(self):
+        for _ in range(20):
+            if not self._is_logged_in():
+                time.sleep(1.2)
+            else:
+                break
+
+        if not self._is_logged_in():
+            print('Still not logged in ... ?')
+            input('Proceed manually and press ENTER to continue\n')
+
         time.sleep(2)
         self._accept_cookies()
         self._accept_location_notification()
         self._deny_overlayed_notifications()
+
+        #self.browser.execute_cdp_cmd(
+        #    "Browser.grantPermissions",
+        #    {
+        #        "origin": "https://www.tinder.com",
+        #        "permissions": ["geolocation"]
+        #    },
+        #)
+
+        time.sleep(5)
 
     def _accept_location_notification(self):
         try:
@@ -210,7 +230,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath)))
 
-            locationBtn = self.browser.find_element_by_xpath(xpath)
+            locationBtn = self.browser.find_element(By.XPATH, xpath)
             locationBtn.click()
             print("ACCEPTED LOCATION.")
         except TimeoutException:
@@ -225,7 +245,7 @@ class LoginHelper:
             WebDriverWait(self.browser, self.delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath)))
 
-            self.browser.find_element_by_xpath(xpath).click()
+            self.browser.find_element(By.XPATH, xpath).click()
             print("DENIED NOTIFICATIONS.")
         except TimeoutException:
             print(
@@ -238,18 +258,23 @@ class LoginHelper:
             xpath = '//*[@type="button"]'
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.XPATH, xpath)))
-            buttons = self.browser.find_elements_by_xpath(xpath)
+            buttons = self.browser.find_elements(By.XPATH, xpath)
 
             for button in buttons:
-                text_span = button.find_element_by_xpath('.//span').text
-                if 'i accept' in text_span.lower():
-                    button.click()
-                    break
-            print("COOKIES ACCEPTED.")
+                try:
+                    text_span = button.find_element(By.XPATH, './/span').text
+                    if 'accept' in text_span.lower():
+                        button.click()
+                        print("COOKIES ACCEPTED.")
+                        break
+                except NoSuchElementException:
+                    pass
+
         except TimeoutException:
             print(
                 "ACCEPTING COOKIES: Loading took too much time! Element probably not presented, so we continue.")
-        except:
+        except Exception as e:
+            print("Error cookies", e)
             pass
 
     def _change_focus_to_pop_up(self):

@@ -1,10 +1,13 @@
 # Selenium: automation of browser
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
+import undetected_chromedriver.v2 as uc
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotVisibleException
+from selenium.webdriver.common.by import By
+
 
 # some other imports :-)
 import os
@@ -13,12 +16,13 @@ import time
 import random
 import requests
 import atexit
-
+from pathlib import Path
 
 # Tinderbotz: helper classes
 from tinderbotz.helpers.geomatch import Geomatch
 from tinderbotz.helpers.match import Match
 from tinderbotz.helpers.profile_helper import ProfileHelper
+from tinderbotz.helpers.preferences_helper import PreferencesHelper
 from tinderbotz.helpers.geomatch_helper import GeomatchHelper
 from tinderbotz.helpers.match_helper import MatchHelper
 from tinderbotz.helpers.login_helper import LoginHelper
@@ -26,12 +30,13 @@ from tinderbotz.helpers.storage_helper import StorageHelper
 from tinderbotz.helpers.email_helper import EmailHelper
 from tinderbotz.helpers.constants_helper import Printouts
 from tinderbotz.helpers.xpaths import *
+from tinderbotz.addproxy import get_proxy_extension
+
 
 class Session:
-
     HOME_URL = "https://www.tinder.com/app/recs"
 
-    def __init__(self):
+    def __init__(self, headless=False, store_session=True, proxy=None, user_data=False):
         self.email = None
         self.may_send_email = False
         self.session_data = {
@@ -42,7 +47,54 @@ class Session:
         }
 
         start_session = time.time()
+        self.started = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
+        # Go further with the initialisation
+        # Setting some options of the browser here below
+
+        options = uc.ChromeOptions()
+
+        # Create empty profile to avoid annoying Mac Popup
+        if store_session:
+            if not user_data:
+                user_data = f"{Path().absolute()}/chrome_profile/"
+            if not os.path.isdir(user_data):
+                os.mkdir(user_data)
+            print("user_data", user_data)
+            Path(f'{user_data}First Run').touch()
+            options.add_argument(f"--user-data-dir={user_data}")
+
+        #options.add_argument("--start-maximized")
+        options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
+        options.add_argument("--lang=en-GB")
+
+        if headless:
+            options.headless = True
+
+        if proxy:
+            if '@' in proxy:
+                parts = proxy.split('@')
+
+                user = parts[0].split(':')[0]
+                pwd = parts[0].split(':')[1]
+
+                host = parts[1].split(':')[0]
+                port = parts[1].split(':')[1]
+
+                extension = get_proxy_extension(PROXY_HOST=host, PROXY_PORT=port, PROXY_USER=user, PROXY_PASS=pwd)
+                options.add_extension(extension)
+            else:
+                options.add_argument(f'--proxy-server=http://{proxy}')
+
+        # Getting the chromedriver from cache or download it from internet
+        print("Getting ChromeDriver ...")
+        self.browser = uc.Chrome(options=options)  
+        # ChromeDriverManager().install(),
+        # self.browser = webdriver.Chrome(options=options)
+        # self.browser.set_window_size(1250, 750)
+
+        # clear the console based on the operating system you're using
+        #os.system('cls' if os.name == 'nt' else 'clear')
         # this function will run when the session ends
         @atexit.register
         def cleanup():
@@ -64,33 +116,15 @@ class Session:
                 print("Started session: {}".format(self.started))
                 y = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 print("Ended session: {}".format(y))
-
-        # Go further with the initialisation
-        # Setting some options of the browser here below
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('w3c', False)
-
-        options.add_experimental_option("useAutomationExtension", False)
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-
-        options.add_argument("--lang=en-GB")
-
-        # Getting the chromedriver from cache or download it from internet
-        print("Getting ChromeDriver ...")
-        self.browser = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-        self.browser.set_window_size(1250, 750)
-
-        # clear the console based on the operating system you're using
-        os.system('cls' if os.name == 'nt' else 'clear')
+            
+            # Close browser properly
+            self.browser.quit()
 
         # Cool banner
         print(Printouts.BANNER.value)
         time.sleep(1)
 
-        self.started = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         print("Started session: {}\n\n".format(self.started))
-
 
     # Setting a custom location
     def set_custom_location(self, latitude, longitude, accuracy="100%"):
@@ -109,20 +143,28 @@ class Session:
 
     # NOTE: Need to be logged in for this
     def set_distance_range(self, km):
-        helper = ProfileHelper(browser=self.browser)
+        helper = PreferencesHelper(browser=self.browser)
         helper.set_distance_range(km)
 
     def set_age_range(self, min, max):
-        helper = ProfileHelper(browser=self.browser)
+        helper = PreferencesHelper(browser=self.browser)
         helper.set_age_range(min, max)
 
     def set_sexuality(self, type):
-        helper = ProfileHelper(browser=self.browser)
+        helper = PreferencesHelper(browser=self.browser)
         helper.set_sexualitiy(type)
 
     def set_global(self, boolean):
-        helper = ProfileHelper(browser=self.browser)
+        helper = PreferencesHelper(browser=self.browser)
         helper.set_global(boolean)
+
+    def set_bio(self, bio):
+        helper = ProfileHelper(browser=self.browser)
+        helper.set_bio(bio)
+
+    def add_photo(self, filepath):
+        helper = ProfileHelper(browser=self.browser)
+        helper.add_photo(filepath)
 
     # Actions of the session
     def login_using_google(self, email, password):
@@ -172,8 +214,9 @@ class Session:
         # store its userdata
         StorageHelper.store_match(match=match, directory='data/{}'.format(filename), filename=filename)
 
-    def like(self, amount=1, ratio='100%', sleep=1):
-
+    def like(self, amount=1, ratio='100%', sleep=1, randomize_sleep = True):
+        
+        initial_sleep = sleep
         ratio = float(ratio.split('%')[0]) / 100
 
         if self._is_logged_in():
@@ -183,23 +226,24 @@ class Session:
             self._handle_potential_popups()
             print("\nLiking profiles started.")
             while amount_liked < amount:
+                # randomize sleep
+                if randomize_sleep:
+                    sleep = random.uniform(0.5, 2.3) * initial_sleep
                 if random.random() <= ratio:
                     if helper.like():
                         amount_liked += 1
                         # update for stats after session ended
                         self.session_data['like'] += 1
-                        print(f"{amount_liked}/{amount} liked")
-
+                        print(f"{amount_liked}/{amount} liked, sleep: {sleep}")
                 else:
                     helper.dislike()
                     # update for stats after session ended
                     self.session_data['dislike'] += 1
 
-                self._handle_potential_popups()
+                #self._handle_potential_popups()
                 time.sleep(sleep)
 
             self._print_liked_stats()
-
 
     def dislike(self, amount=1):
         if self._is_logged_in():
@@ -210,6 +254,7 @@ class Session:
 
                 # update for stats after session ended
                 self.session_data['dislike'] += 1
+                #time.sleep(1)
             self._print_liked_stats()
 
     def superlike(self, amount=1):
@@ -220,6 +265,7 @@ class Session:
                 helper.superlike()
                 # update for stats after session ended
                 self.session_data['superlike'] += 1
+                time.sleep(1)
             self._print_liked_stats()
 
     def get_geomatch(self, quickload=True):
@@ -229,24 +275,27 @@ class Session:
 
             name = None
             attempts = 0
-            max_attempts = 20
+            max_attempts = 3
             while not name and attempts < max_attempts:
                 attempts += 1
                 name = helper.get_name()
-                time.sleep(2)
+                self._handle_potential_popups() # Popup handling on first geomatch
+                time.sleep(1)
 
             age = helper.get_age()
-            bio = helper.get_bio()
+
+            bio, passions, lifestyle, basics, anthem, looking_for = helper.get_bio_and_passions()
             image_urls = helper.get_image_urls(quickload)
+            instagram = helper.get_insta(bio)
             rowdata = helper.get_row_data()
             work = rowdata.get('work')
             study = rowdata.get('study')
             home = rowdata.get('home')
             distance = rowdata.get('distance')
+            gender = rowdata.get('gender')
 
-            passions = helper.get_passions()
-
-            return Geomatch(name=name, age=age, work=work, study=study, home=home, distance=distance, bio=bio, passions=passions, image_urls=image_urls)
+            return Geomatch(name=name, age=age, work=work, gender=gender, study=study, home=home, distance=distance,
+                            bio=bio, passions=passions, lifestyle=lifestyle, basics=basics, anthem=anthem, looking_for=looking_for, image_urls=image_urls, instagram=instagram)
 
     def get_chat_ids(self, new=True, messaged=True):
         if self._is_logged_in():
@@ -284,11 +333,11 @@ class Session:
             self._handle_potential_popups()
             helper.send_song(chatid, songname)
 
-    def send_socials(self, chatid, media, value):
+    def send_socials(self, chatid, media):
         if self._is_logged_in():
             helper = MatchHelper(browser=self.browser)
             self._handle_potential_popups()
-            helper.send_socials(chatid, media, value)
+            helper.send_socials(chatid, media)
 
     def unmatch(self, chatid):
         if self._is_logged_in():
@@ -301,15 +350,15 @@ class Session:
         delay = 0.25
 
         # last possible id based div
-        base_element = self.browser.find_elements_by_xpath(modal_manager)[-1]
+        base_element = self.browser.find_element(By.XPATH, modal_manager)
 
         # try to deny see who liked you
         try:
-            xpath = './/div/div/div/div[3]/button[2]'
+            xpath = './/main/div/div/div[3]/button[2]'
             WebDriverWait(base_element, delay).until(
                 EC.presence_of_element_located((By.XPATH, xpath)))
 
-            deny_btn = base_element.find_element_by_xpath(xpath)
+            deny_btn = base_element.find_element(By.XPATH, xpath)
             deny_btn.click()
             return "POPUP: Denied see who liked you"
 
@@ -321,17 +370,17 @@ class Session:
         # Try to dismiss a potential 'upgrade like' popup
         try:
             # locate "no thanks"-button
-            xpath = './/div/div/button[2]'
-            base_element.find_element_by_xpath(xpath).click()
+            xpath = './/main/div/button[2]'
+            base_element.find_element(By.XPATH, xpath).click()
             return "POPUP: Denied upgrade to superlike"
         except NoSuchElementException:
             pass
 
         # try to deny 'add tinder to homescreen'
         try:
-            xpath = './/div/div/div[2]/button[2]'
+            xpath = './/main/div/div[2]/button[2]'
 
-            add_to_home_popup = base_element.find_element_by_xpath(xpath)
+            add_to_home_popup = base_element.find_element(By.XPATH, xpath)
             add_to_home_popup.click()
             return "POPUP: Denied Tinder to homescreen"
 
@@ -340,8 +389,8 @@ class Session:
 
         # deny buying more superlikes
         try:
-            xpath = './/div/div/div[3]/button[2]'
-            deny = base_element.find_element_by_xpath(xpath)
+            xpath = './/main/div/div[3]/button[2]'
+            deny = base_element.find_element(By.XPATH, xpath)
             deny.click()
             return "POPUP: Denied buying more superlikes"
         except NoSuchElementException:
@@ -352,7 +401,7 @@ class Session:
         try:
             xpath = '//button[@title="Back to Tinder"]'
 
-            match_popup = base_element.find_element_by_xpath(xpath)
+            match_popup = base_element.find_element(By.XPATH, xpath)
             match_popup.click()
             matched = True
 
@@ -373,8 +422,8 @@ class Session:
 
         # try to say 'no thanks' to buy more (super)likes
         try:
-            xpath = './/div/div/div[3]/button[2]'
-            deny_btn = base_element.find_element_by_xpath(xpath)
+            xpath = './/main/div/div[3]/button[2]'
+            deny_btn = base_element.find_element(By.XPATH, xpath)
             deny_btn.click()
             return "POPUP: Denied buying more superlikes"
 
@@ -383,11 +432,15 @@ class Session:
             self.browser.refresh()
         except NoSuchElementException:
             pass
+        except:
+            # TBD add stale element exception for now just refresh page
+            self.browser.refresh()
+            pass
 
         # Deny confirmation of email
         try:
-            xpath = './/div/div/div[1]/div[2]/button[2]'
-            remindmelater = base_element.find_element_by_xpath(xpath)
+            xpath = './/main/div/div[1]/div[2]/button[2]'
+            remindmelater = base_element.find_element(By.XPATH, xpath)
             remindmelater.click()
 
             time.sleep(3)
@@ -400,7 +453,7 @@ class Session:
         # Deny add location popup
         try:
             xpath = ".//*[contains(text(), 'No Thanks')]"
-            nothanks = base_element.find_element_by_xpath(xpath)
+            nothanks = base_element.find_element(By.XPATH, xpath)
             nothanks.click()
             time.sleep(3)
             # handle other potential popups

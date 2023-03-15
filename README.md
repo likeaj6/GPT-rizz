@@ -1,9 +1,5 @@
-# TinderBot
-
-## YouTube Video
-
-[![Getting +1000 Matches on Tinder in 24 Hours by Building a Tinderbot!](https://img.youtube.com/vi/qCgKlCi6YRI/0.jpg)](https://www.youtube.com/watch?v=qCgKlCi6YRI)
-
+# Tinderbotz
+**Consider giving a ⭐ if you like the project!**
 ## Project
 <!-- PROJECT LOGO -->
 <br />
@@ -43,6 +39,8 @@
 * [Example Data Analysis](#example-data-analysis)
 * [Avoiding the Ban](#how-to-avoid-the-ban)
 * [Support the Repository](#support-the-repository)
+* [Other Tinder Repositories](#other-tinder-repositories)
+* [Disclaimer](#disclaimer)
 
 <!-- ABOUT THE PROJECT -->
 ## About the Project
@@ -55,7 +53,7 @@ I managed to succesfully create a bot that could: </br>
 * Setting a custom location for **FREE** (which is normally a paid-for-***Tinder Plus***-feature)
 * Setting profile settings and preferences, such as distance radius, minimum and maximum age, sexuality.
 * Accept all notifications and dismiss pop-ups
-* Swiping x amount of profiles left or right
+* Swiping x number of profiles left or right
 * Scraping data of the profiles displayed, including, yet not limited to, name, age, bio, images, ...
 * Sending personalized messages to your matches
 * Sending you social media cards, like Instagram, Snapchat, Phonenumber and Facebook
@@ -68,19 +66,23 @@ If you're new to coding and just want the script to automatically like, the [aut
 </br>
 ***Enjoy! :)***</br>
 
+***Youtube Video***
+[![Getting +1000 Matches on Tinder in 24 Hours by Building a Tinderbot!](https://img.youtube.com/vi/qCgKlCi6YRI/0.jpg)](https://www.youtube.com/watch?v=qCgKlCi6YRI)
+
 ### Built with
 
 * [Python](https://www.python.org/)
 * [Selenium](https://selenium.dev)
+* [Undetected-Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
 
 ### Breaking Record
 **I broke the world record most matches using this script!**</br>
 Reached 1000 matches in the first 24hours.</br>
 Currently at 30000 matches!</br>
 
-<p align="center">
+<p align="left">
   <a href="https://user-images.githubusercontent.com/60892381/104088880-2d014100-526a-11eb-8b6d-ad1da6567778.jpg">
-    <img src="https://user-images.githubusercontent.com/60892381/104088880-2d014100-526a-11eb-8b6d-ad1da6567778.jpg">
+    <img src="https://user-images.githubusercontent.com/60892381/104088880-2d014100-526a-11eb-8b6d-ad1da6567778.jpg" width="250">
   </a>
 </p>
 
@@ -127,7 +129,7 @@ You can create wordclouds to visualise data such as the most popular names, or m
 
 #### The 'Average' Person
 You can also start calculating what an 'average' tinderprofile would look like.</br>
-You can for example check the average amount of words a bio consists of or the average amount of images a user has.
+You can for example check the average number of words a bio consists of or the average number of images a user has.
 <img src="https://user-images.githubusercontent.com/60892381/94479341-f03a9e00-01d4-11eb-9a10-70a8aa8208ea.png"></src>
 
 ## How to Avoid the Ban
@@ -165,6 +167,17 @@ If you feel like buying me a drink:
 * [Paypal](https://paypal.me/frederikmees)
 * [Patreon](https://www.patreon.com/frederikme)
 * [Buy Me A Coffee](https://www.buymeacoffee.com/frederikme)
-* Bitcoin 
-    * 1NtekHsUXsm3ifDnLFeWPECYtyfBTCZduL
+
+## Other Tinder Repositories
+![Imgur](https://imgur.com/hSVjccD.jpg)
+- [Analysis of Tinder Likes from "Likes Sent"](https://github.com/acarter881/tinder_likes_data) <br>
+This repository uses Selenium, pandas, BeautifulSoup, Excel, and more to glean meaningful insights from Tinder profile cards.
+
+## Disclaimer
+Using automated software on Tinder is against community guidelines and might get your account banned.</br>
+
+Also for the section **data mining**: scraping profiles is not only against Tinder's policies, but it's also against the law in many places.</br>
+People on Tinder did not give their permission to be stored by any other entity than Tinder itself and people have the right to be forgotten. (see: [GDPR in Europe](https://ec.europa.eu/info/law/law-topic/data-protection/data-protection-eu_en))</br>
+
+So here's a reminder that this software is for **educational purposes only** and it cannot be held accountable for any consequences you may face by having used this tool. Neither personal (banned account) nor judicial (lawsuits for privacy violations).
 
