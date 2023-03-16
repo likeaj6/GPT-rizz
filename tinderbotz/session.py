@@ -344,6 +344,10 @@ class Session:
             helper = MatchHelper(browser=self.browser)
             self._handle_potential_popups()
             helper.unmatch(chatid)
+    def open_chat(self, chatid):
+        if self._is_logged_in():
+            helper = MatchHelper(browser=self.browser)
+            helper._open_chat(chatid)
 
     # Utilities
     def _handle_potential_popups(self):

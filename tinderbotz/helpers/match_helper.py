@@ -582,7 +582,10 @@ class MatchHelper:
                     image_url = element.value_of_css_property('background-image').split('\"')[1]
                     if image_url not in image_urls:
                         image_urls.append(image_url)
+            self.browser.find_element(By.CSS_SELECTOR, "div[class='CenterAlign H(100%) Fxd(c)']").click()
 
+            # self.browser.find_elements(By.CLASS_NAME, "CenterAlign H(100%) Fxd(c)")[0].click()
+            # WebDriverWait(self.browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "recsToolbar"))).click()
         except StaleElementReferenceException:
             pass
 

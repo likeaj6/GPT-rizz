@@ -339,7 +339,7 @@ class GeomatchHelper:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.CLASS_NAME, classname)))
 
-            image_btns = self.browser.find_elements(BY.CLASS_NAME, classname)
+            image_btns = self.browser.find_elements(By.CLASS_NAME, classname)
 
             for btn in image_btns:
                 btn.click()
@@ -350,7 +350,8 @@ class GeomatchHelper:
                     image_url = element.value_of_css_property('background-image').split('\"')[1]
                     if image_url not in image_urls:
                         image_urls.append(image_url)
-
+            # WebDriverWait(self.browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "recsToolbar"))).click()
+            self.browser.find_element(By.CSS_SELECTOR, "div[class='CenterAlign H(100%) Fxd(c)']").click()
         except StaleElementReferenceException:
             pass
 
