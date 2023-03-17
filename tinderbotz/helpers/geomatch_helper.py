@@ -319,22 +319,21 @@ class GeomatchHelper:
             self._open_profile()
 
         image_urls = []
-
         # only get url of first few images, and not click all bullets to get all image
-        elements = self.browser.find_elements(By.XPATH, "//div[@aria-label='Profile slider']")
+        elements = self.browser.find_elements(By.CLASS_NAME, "profileCard__slider__img")
+        # print("\nslider elements", elements)
+        WebDriverWait(self.browser, self.delay)
         for element in elements:
+            # print(element)
             image_url = element.value_of_css_property('background-image').split('\"')[1]
+            # print(image_url)
             if image_url not in image_urls:
                 image_urls.append(image_url)
-
         # return image urls without opening all images
         if quickload:
             return image_urls
-
         try:
-            # There are no bullets when there is only 1 image
             classname = 'bullet'
-
             # wait for element to appear
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
                 (By.CLASS_NAME, classname)))
@@ -345,12 +344,43 @@ class GeomatchHelper:
                 btn.click()
                 time.sleep(1)
 
-                elements = self.browser.find_elements(By.XPATH, "//div[@aria-label='Profile slider']")
+                elements = self.browser.find_elements(By.CLASS_NAME, "profileCard__slider__img")
+                # print("getting image elements", elements)
                 for element in elements:
                     image_url = element.value_of_css_property('background-image').split('\"')[1]
                     if image_url not in image_urls:
                         image_urls.append(image_url)
-            # WebDriverWait(self.browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "recsToolbar"))).click()
+            # only get url of first few images, and not click all bullets to get all image
+            # elements = self.browser.find_elements(By.XPATH, "//div[@aria-label='Profile slider']")
+            # for element in elements:
+            #     image_url = element.value_of_css_property('background-image').split('\"')[1]
+            #     if image_url not in image_urls:
+            #         image_urls.append(image_url)
+
+            # # return image urls without opening all images
+            # if quickload:
+            #     return image_urls
+
+            # try:
+            #     # There are no bullets when there is only 1 image
+            #     classname = 'bullet'
+
+            #     # wait for element to appear
+            #     WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
+            #         (By.CLASS_NAME, classname)))
+
+            #     image_btns = self.browser.find_elements(By.CLASS_NAME, classname)
+
+            #     for btn in image_btns:
+            #         btn.click()
+            #         time.sleep(1)
+
+            #         elements = self.browser.find_elements(By.XPATH, "//div[@aria-label='Profile slider']")
+            #         for element in elements:
+            #             image_url = element.value_of_css_property('background-image').split('\"')[1]
+            #             if image_url not in image_urls:
+            #                 image_urls.append(image_url)
+                # WebDriverWait(self.browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "recsToolbar"))).click()
             self.browser.find_element(By.CSS_SELECTOR, "div[class='CenterAlign H(100%) Fxd(c)']").click()
         except StaleElementReferenceException:
             pass
@@ -358,10 +388,17 @@ class GeomatchHelper:
         except TimeoutException:
             # there is only 1 image, so no bullets to iterate through
             try:
-                element = self.browser.find_element(By.XPATH, "//div[@aria-label='Profile slider']")
+                element = self.browser.find_element(By.CLASS_NAME, "profileCard__slider__img")
+                # print("\nslider elements", elements)
+                WebDriverWait(self.browser, self.delay)
                 image_url = element.value_of_css_property('background-image').split('\"')[1]
+                    # print(image_url)
                 if image_url not in image_urls:
                     image_urls.append(image_url)
+                # element = self.browser.find_element(By.XPATH, "//div[@aria-label='Profile slider']")
+                # image_url = element.value_of_css_property('background-image').split('\"')[1]
+                # if image_url not in image_urls:
+                #     image_urls.append(image_url)
 
             except Exception as e:
                 print("unhandled Exception when trying to store their only image")

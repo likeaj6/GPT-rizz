@@ -10,6 +10,57 @@ import openai
 import asyncio
 import re
 
+import torch
+import clip
+from PIL import Image
+import requests
+from io import BytesIO
+
+# TODO: may want to host CLIP, since this is slow af on most computers
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# model = None
+# preprocess = None
+
+model, preprocess = clip.load("ViT-B/32", device=device)
+# def load_model():
+    # global model, preprocess
+
+def hotornot(image_url, gender):
+    response = requests.get(image_url)
+    image = Image.open(BytesIO(response.content))
+    # image = Image.open(requests.get(url, stream=True).raw)
+    # image = Image.fromarray(image.astype("uint8"), "RGB")
+
+    image = preprocess(image).unsqueeze(0).to(device)
+    positive_terms = [f'a hot {gender}', f'a beautiful {gender}', f'an attractive {gender}']
+    negative_terms = [f'a gross {gender}', f'an ugly {gender}', f'a hideous {gender}']
+
+    pairs = list(zip(positive_terms, negative_terms))
+
+    def evaluate(terms):
+        text = clip.tokenize(terms).to(device)
+
+        with torch.no_grad():
+            logits_per_image, logits_per_text = model(image, text)
+            probs = logits_per_image.softmax(dim=-1).cpu().numpy()
+            return probs[0]
+
+    probs = [evaluate(pair) for pair in pairs]
+    
+    positive_probs = [prob[0] for prob in probs]
+    negative_probs = [prob[1] for prob in probs]
+
+    hotness_score = round((probs[0][0] - probs[0][1] + 1) * 50, 2)
+    beauty_score = round((probs[1][0] - probs[1][1] + 1) * 50, 2)
+    attractiveness_score = round((probs[2][0] - probs[2][1] + 1) * 50, 2)
+
+    hot_score = sum(positive_probs)/len(positive_probs)
+    ugly_score = sum(negative_probs)/len(negative_probs)
+    composite = ((hot_score - ugly_score)+1) * 50
+    composite = round(composite, 2)
+    return composite, hotness_score, beauty_score, attractiveness_score
+
+
 def remove_emojis(data):
     emoj = re.compile("["
         u"\U0001F600-\U0001F64F"  # emoticons
@@ -195,7 +246,7 @@ async def main():
     user_input = ""
     while True:
         while True:
-            user_input = input("Select from menu\n[a] Auto-swipe 10 profiles\n[m] Message new matches\n[x] Exit\n")
+            user_input = input("Select from menu\n[a] Auto-swipe profiles\n[m] Message new matches\n[x] Exit\n")
             if str(user_input) in ('a', 'm', 'x'):
                 break
             print("Invalid input.")
@@ -204,14 +255,42 @@ async def main():
         if str(user_input) == 'm':
             auto_message(session)
         elif str(user_input) == 'a':
-            for _ in range(10):
+            # load_model()
+            num_swipes = int(input("How many profiles do you want to swipe through? Enter a number: "))
+            score_threshold = int(input("Above what threshold attractiveness to swipe on? Enter a number from 0-100: "))
+            for _ in range(num_swipes):
                 # get profile data (name, age, bio, images, ...)
                 geomatch = session.get_geomatch(quickload=False)
                 # store this data locally as json with reference to their respective (locally stored) images
-                session.store_local(geomatch)
-                # dislike the profile, so it will show us the next geomatch (since we got infinite amount of dislikes anyway)
-                session.like()
-                random_wait = random.randint(0, 3) 
+                # session.store_local(geomatch)
+                composite_sum = 0
+                attractiveness_sum = 0
+                hotness_sum = 0
+                beauty_sum = 0
+                
+                print(f"Number of images: {len(geomatch.image_urls)}")
+                if geomatch.image_urls and len(geomatch.image_urls) > 0:
+                    # TODO: change to get average score of all their images, defaults to using first photo, 
+                    # figure out a way to get gender instead of assuming woman
+                    for image_url in geomatch.image_urls:
+                        composite, hotness_score, beauty_score, attractiveness_score = hotornot(image_url, "woman")
+                        composite_sum += composite
+                        attractiveness_sum += attractiveness_score
+                        beauty_sum += beauty_score
+                        hotness_sum += hotness_score
+                    composite_avg = composite_sum/len(geomatch.image_urls)
+                    attractiveness_avg = attractiveness_sum/len(geomatch.image_urls)
+                    hotness_avg = hotness_sum/len(geomatch.image_urls)
+                    beauty_avg = beauty_sum/len(geomatch.image_urls)
+                    print(f"Average attractiveness scores:\nComposite ({composite_avg}), Hotness ({hotness_avg}), Beauty score ({beauty_avg}), Attractiveness ({attractiveness_avg})")
+                is_hot = composite_sum != 0 and composite_avg >= score_threshold or attractiveness_avg >= score_threshold or hotness_avg >= score_threshold or beauty_avg >= score_threshold
+                if composite_sum != 0 and is_hot:
+                    print(f"Score is above {score_threshold}, swiping right\n")
+                    session.smart_like()
+                else:
+                    print(f"Score is below threshold, swiping left\n")
+                    session.dislike()
+                    random_wait = random.randint(0, 2) 
 
         else:
             exit(1)

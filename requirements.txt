@@ -6,3 +6,6 @@ Pillow==9.3.0
 openai==0.27.0
 asyncio
 numpy
+torch
+git+https://github.com/openai/CLIP.git
+requests

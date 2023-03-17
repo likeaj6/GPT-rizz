@@ -564,7 +564,6 @@ class MatchHelper:
             # return image urls without opening all images
             if quickload:
                 return image_urls
-
             classname = 'bullet'
             # wait for element to appear
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(
