@@ -63,7 +63,7 @@ def hotornot(image_url, gender):
     composite = round(composite, 2)
     return composite, hotness_score, beauty_score, attractiveness_score
 
-def clean_extract_message(message, use_chat_completion):
+def clean_extract_message(message, use_chat_completion=True):
     if use_chat_completion:
         return remove_emojis(message.message.content.replace("\"", "", 2)).strip()
     else:
