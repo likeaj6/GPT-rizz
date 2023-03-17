@@ -352,6 +352,12 @@ class Session:
             self._handle_potential_popups()
             helper.send_message(chatid, message)
 
+    def get_messages(self, chatid):
+        if self._is_logged_in():
+            helper = MatchHelper(browser=self.browser)
+            self._handle_potential_popups()
+            return helper.get_convo_messages(chatid)
+
     def send_gif(self, chatid, gifname):
         if self._is_logged_in():
             helper = MatchHelper(browser=self.browser)

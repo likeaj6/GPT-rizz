@@ -9,12 +9,15 @@ from tinderbotz.helpers.constants_helper import *
 import openai
 import asyncio
 import re
-
 import torch
 import clip
-from PIL import Image
 import requests
+import os
+from PIL import Image
 from io import BytesIO
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # TODO: may want to host CLIP, since this is slow af on most computers
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -60,6 +63,12 @@ def hotornot(image_url, gender):
     composite = round(composite, 2)
     return composite, hotness_score, beauty_score, attractiveness_score
 
+def clean_extract_message(message, use_chat_completion):
+    if use_chat_completion:
+        return remove_emojis(message.message.content.replace("\"", "", 2)).strip()
+    else:
+        return remove_emojis(message.text.replace("\"", "", 2)).strip()
+
 
 def remove_emojis(data):
     emoj = re.compile("["
@@ -94,6 +103,36 @@ def generate_completions(prompt):
         temperature=0.9,
         n=5
     )
+    return completion
+
+def generate_reply(messages, use_chat_completion=True):
+    completion = None
+    if use_chat_completion:
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+                messages=messages,
+            max_tokens=50,
+            temperature=0.9,
+            n=5
+        )
+    else:
+        prompt = ""
+        message_history = ""
+        for message in messages:
+            if message["role"] == "system":
+                prompt += message["content"]
+            else:
+                prompt = prompt + "\n" + message["content"]
+                message_history += "\n" + message["content"]
+        prompt += "\nGuy:"
+        print("Using conversation history:\n", message_history)
+        completion = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            max_tokens=50,
+            temperature=0.9,
+            n=5
+        )
     return completion
 
 def auto_message(session):
@@ -136,7 +175,7 @@ def auto_message(session):
             completion = generate_completions(prompt)
             pickup_lines = completion.choices
             for index, line in enumerate(pickup_lines):
-                print(f"Line {index+1}:", remove_emojis(line.message.content.replace("\"", "", 2)), "\n")
+                print(f"Line {index+1}:\n", clean_extract_message(line), "\n")
             # pickup_line = completion.choices[0].message.content
             # name = match.get_name()
             # send pick up line with their name in it to all my matches
@@ -155,7 +194,90 @@ def auto_message(session):
                 break
             else:
                 line_index = int(user_input)
-                pickup_line = remove_emojis(pickup_lines[line_index - 1].message.content.replace("\"", "", 2))
+                pickup_line = clean_extract_message(pickup_lines[line_index - 1])
+                print(f"Sending selected message: {pickup_line}...\n")
+                session.send_message(chatid=id, message=pickup_line)
+                break
+
+        # send a funny gif
+        #session.send_gif(chatid=id, gifname="")
+
+        # send a funny song
+        #session.send_song(chatid=id, songname="")
+
+        # send instagram or other socials like facebook, phonenumber and snapchat
+        #session.send_socials(chatid=id, media=Socials.INSTAGRAM, value="Fredjemees")
+
+        # you can also unmatch
+        #session.unmatch(chatid=id)
+
+def auto_respond(session):
+    messaged_matches = session.get_messaged_matches(amount=7, quickload=True)
+
+    # loop through my new matches and send them the first message of the conversation
+    for match in messaged_matches:
+        # store name and chatid in variables so we can use it more simply later on
+        session.store_local(match)
+        # print("match:", match.get_dictionary())
+        
+
+        session.open_chat(match.get_chat_id())
+
+        # completion = openai.Completion.create(
+        # model="text-davinci-003",
+        # prompt=prompt,
+        # max_tokens=50,
+        # temperature=0.9,
+        # n=5
+        # )
+        id = match.get_chat_id()
+        while True:
+            formatted_messages = session.get_messages(id)
+            prompt = f"Below is a conversation on Tinder."
+            context = ""
+            if len(match.passions) > 0:
+                random_passion = random.randint(0, len(match.passions)-1) 
+                # cleaned = [passion.replace("My", "Her") for passion in match.passions]
+                # cleaned = [passion.replace("My", "Her") for passion in match.passions]
+                context = " Her interests/passions includes:\n- " + "\n- ".join([match.passions[random_passion].replace("My", "Her")]) + "."
+            if match.bio and len(match.bio) > 0:
+                context = context + f' Her bio is: {match.bio}.\n\n'
+
+            # prompt = prompt + "Synthesize the information from her bio to write a witty, provacative and attention grabbing pick-up one-liner (you dont have to use all of the information, just what you think will get you laid). Use informal, lower case as if you were texting them"
+            # prompt = prompt + "Write a thirsty and attention grabbing pick-up one-liner for Tinder. Never address them by their name or social media usernames. Never use emojis. Use informal, lower case as if you were texting them. You're allowed to reference only one single thing from her bio, and only if it's sexual. Only use 50 characters total."
+
+            prompt = prompt + context + "Be provacative and attention grabbing. Your goal is to set up a date. Use informal, lower case as if you were texting them. Be flirty, sexual, but subtle and not cheesy. Only use 50 characters. Respond as Guy"
+
+            print("Generating conversation starters from bio: ", context)
+
+            use_chat_completion = False
+            completion = generate_reply([
+                {"role": "system", "content": prompt},
+            ] + formatted_messages, use_chat_completion)
+            replies = completion.choices
+
+            
+            for index, line in enumerate(replies):
+                print(f"Reply {index+1}:\n", clean_extract_message(line, use_chat_completion).replace("Guy: ", "").strip(), "\n")
+            # pickup_line = completion.choices[0].message.content
+            # name = match.get_name()
+            # send pick up line with their name in it to all my matches
+            while True:
+                # Format the match her/his name in your pickup line for a more personal approach.
+                # message = pickup_line.format(name)
+                user_input = input("Enter the number of the reply to send... (1-5).\nTo re-generate suggestions, type r\nTo skip to the next match, type s\n\n")
+
+                if str(user_input) in ('r', 's', '1', '2', '3', '4', '5'):
+                    break
+                print("Invalid input.")
+            if str(user_input) == 'r':
+                print("Regenerating replies...\n\n")
+                continue
+            elif str(user_input) == 's':
+                break
+            else:
+                line_index = int(user_input)
+                pickup_line = clean_extract_message(line, use_chat_completion).replace("Guy: ", "").strip()
                 print(f"Sending selected message: {pickup_line}...\n")
                 session.send_message(chatid=id, message=pickup_line)
                 break
@@ -185,8 +307,8 @@ async def main():
     # session.set_custom_location(latitude=50.879829, longitude=4.700540)
     
     # replace this with your own email and password!
-    email = ""
-    password = ""
+    email = os.environ.get('EMAIL')
+    password = os.environ.get('PASSWORD')
     
     # login using your google account with a verified email!
     #session.login_using_google(email, password)
@@ -238,7 +360,7 @@ async def main():
     # # For now let's just store the messaged_matches
 
     # Pick up line with their personal name so it doesn't look spammy
-    OPEN_AI_KEY = ""
+    OPEN_AI_KEY = os.environ.get('OPEN_AI_KEY')
     openai.api_key = OPEN_AI_KEY
 
     # print(new_matches)
@@ -246,14 +368,18 @@ async def main():
     user_input = ""
     while True:
         while True:
-            user_input = input("Select from menu\n[a] Auto-swipe profiles\n[m] Message new matches\n[x] Exit\n")
-            if str(user_input) in ('a', 'm', 'x'):
+            user_input = input("Select from menu\n[a] Auto-swipe profiles\n[m] Message new matches\n[r] Respond to existing matches\n[x] Exit\n")
+            if str(user_input) in ('a', 'm', 'x', 'r'):
                 break
             print("Invalid input.")
         # if str(user_input) in ('a', 'm', 'x'):
             # break
         if str(user_input) == 'm':
             auto_message(session)
+        if str(user_input) == 'r':
+            # print("not ready yet.")
+            # session.get_messages("5e6daa0a234a000100e6ae0463e9551c083ea501001ec376")
+            auto_respond(session)
         elif str(user_input) == 'a':
             # load_model()
             num_swipes = int(input("How many profiles do you want to swipe through? Enter a number: "))

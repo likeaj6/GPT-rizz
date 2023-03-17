@@ -55,7 +55,7 @@ class MatchHelper:
             return self.get_chat_ids(new, messaged)
 
         tabs = self.browser.find_elements(By.XPATH, xpath)
-        print("tabs: ", tabs)
+        # print("tabs: ", tabs)
         if new:
             # Make sure we're in the 'new matches' tab
             for tab in tabs:
@@ -74,7 +74,7 @@ class MatchHelper:
                 WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located((By.XPATH, xpath)))
 
                 div = self.browser.find_element(By.XPATH, xpath)
-                print("div: ", div.text)
+                # print("div: ", div.text)
 
                 list_refs = div.find_elements(By.XPATH, './/ul/li/a')
                 # print("finding elements in matches", list_refs)
@@ -500,6 +500,57 @@ class MatchHelper:
                 rowdata['distance'] = distance
 
         return rowdata
+
+    def get_convo_messages(self, chatid):
+        if not self._is_chat_opened(chatid):
+            self._open_chat(chatid)
+        messages = []
+
+        element = self.browser.find_element(By.XPATH, "//div[@aria-label='Conversation history']")
+
+        message_elements = element.find_elements(By.CLASS_NAME, "msgHelper")
+
+        for message in message_elements:
+            # your messages
+            # class="Pos(r) Ta(e) Pstart(100px) Mt(12px) Mb(8px)"
+            
+
+            # your matches messages 
+            # class="Pos(r) Ta(start) Pend(90px) Pstart(42px)--s Pstart(62px) Mt(12px) Mb(8px)"
+            # elements = message.find_elements_by_xpath("./span[@class = 'msgBackground--received']")
+            # 
+            is_match_message = False
+            try:
+                # print("current message", message, message.text)
+                # elements = message.find_elements(By.CSS_SELECTOR, "div[class='C\(\$c-ds-text-chat-bubble-receive\)']")
+                elements = message.find_elements(By.CLASS_NAME, "msgBackground--received")
+                # class_value = element.get_attribute("class")
+
+# Check if the target class name is present in the value
+                # if "target_class" in class_value:
+                #     print("The element contains the target class.")
+                # else:
+                #     print("The element does not contain the target class.")
+                # elements = message.find_elements(By.XPATH, "/div[@class='']")
+                # print("elements", elements)
+                # for element in elements:
+                    # print("found element:", element.text)
+                if len(elements) > 0:
+                    is_match_message = True
+            
+            except Exception as e:
+                # print("not match message", e)
+                print("")
+            # print("message:", message.text, "\n")
+            if is_match_message:
+                messages.append({ "role": "user", "content": "Girl: " + message.text })
+            else:
+                messages.append({ "role": "user", "content": "Guy: " + message.text })
+        # print("messages", messages)
+        # formatted_messages = [{ "role": "user", "content": message  } for message in messages]
+        return messages
+
+
 
     # TODO: can use this logic to get lifestyle and basics as well
     def get_passions(self, chatid):
