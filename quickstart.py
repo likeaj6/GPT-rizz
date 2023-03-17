@@ -85,7 +85,7 @@ def auto_message(session):
             completion = generate_completions(prompt)
             pickup_lines = completion.choices
             for index, line in enumerate(pickup_lines):
-                print(f"\nLine {index+1}:", remove_emojis(line.message.content.replace("\"", "", 2)))
+                print(f"Line {index+1}:", remove_emojis(line.message.content.replace("\"", "", 2)), "\n")
             # pickup_line = completion.choices[0].message.content
             # name = match.get_name()
             # send pick up line with their name in it to all my matches
@@ -195,7 +195,7 @@ async def main():
     user_input = ""
     while True:
         while True:
-            user_input = input("Select from menu\n[a] Auto-swipe 5 profiles\n[m] Message new matches\n[x] Exit\n")
+            user_input = input("Select from menu\n[a] Auto-swipe 10 profiles\n[m] Message new matches\n[x] Exit\n")
             if str(user_input) in ('a', 'm', 'x'):
                 break
             print("Invalid input.")
@@ -204,7 +204,7 @@ async def main():
         if str(user_input) == 'm':
             auto_message(session)
         elif str(user_input) == 'a':
-            for _ in range(5):
+            for _ in range(10):
                 # get profile data (name, age, bio, images, ...)
                 geomatch = session.get_geomatch(quickload=False)
                 # store this data locally as json with reference to their respective (locally stored) images
