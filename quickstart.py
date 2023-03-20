@@ -136,7 +136,7 @@ def generate_reply(messages, use_chat_completion=True):
     return completion
 
 def auto_message(session):
-    new_matches = session.get_new_matches(amount=20, quickload=True)
+    new_matches = session.get_new_matches(amount=5, quickload=True)
 
     # loop through my new matches and send them the first message of the conversation
     for match in new_matches:
@@ -170,6 +170,8 @@ def auto_message(session):
             # prompt = prompt + "Write a thirsty and attention grabbing pick-up one-liner for Tinder. Never address them by their name or social media usernames. Never use emojis. Use informal, lower case as if you were texting them. You're allowed to reference only one single thing from her bio, and only if it's sexual. Only use 50 characters total."
 
             prompt = prompt + context + "Write a provacative and attention grabbing pick-up one-liner. Use informal, lower case as if you were texting them. Reference only one fact from her bio and interests, and only if it's sexual. Never, ever reference more than one fact. Be subtle and not cheesy. Use sexual double entrendres. Emojis are forbidden. Only use 50 characters."
+            # prompt = prompt + context + "Write an attention grabbing one liner. Use informal, lower case as if you were texting them. Reference only one fact from her bio and interests, and only if it's sexual. Never, ever reference more than one fact. Be subtle and not cheesy. Use sexual double entrendres. Emojis are forbidden. Only use 50 characters. If she has a bio, focus extra hard on including that in the line."
+
 
             print("Generating conversation starters from bio: ", context)
             completion = generate_completions(prompt)
@@ -246,7 +248,7 @@ def auto_respond(session):
             # prompt = prompt + "Synthesize the information from her bio to write a witty, provacative and attention grabbing pick-up one-liner (you dont have to use all of the information, just what you think will get you laid). Use informal, lower case as if you were texting them"
             # prompt = prompt + "Write a thirsty and attention grabbing pick-up one-liner for Tinder. Never address them by their name or social media usernames. Never use emojis. Use informal, lower case as if you were texting them. You're allowed to reference only one single thing from her bio, and only if it's sexual. Only use 50 characters total."
 
-            prompt = prompt + context + "Be provacative and attention grabbing. Your goal is to set up a date. Use informal, lower case as if you were texting them. Be flirty, sexual, but subtle and not cheesy. Only use 50 characters. Respond as Guy"
+            prompt = prompt + context + "Be provacative and attention grabbing. Your goal is to have an engaging conversation. Use informal, lower case as if you were texting them. Be flirty, sexual, but subtle and not cheesy. Only use 50 characters. Respond as Guy"
 
             print("Generating conversation starters from bio: ", context)
 
@@ -314,7 +316,7 @@ async def main():
     #session.login_using_google(email, password)
 
     # Alternatively you can login using facebook with a connected profile!
-    session.login_using_facebook(email, password)
+    # session.login_using_facebook(email, password)
 
     # Alternatively, you can also use your phone number to login
     '''
@@ -322,9 +324,9 @@ async def main():
     - phone_number is everything after the prefix (+32)
     NOTE: this is not my phone number :)
     '''
-    #country = "Belgium"
-    #phone_number = "479011124"
-    #session.login_using_sms(country, phone_number)
+    country = "United States"
+    phone_number = "4154630775"
+    session.login_using_sms(country, phone_number)
 
     # spam likes, dislikes and superlikes
     # to avoid being banned:
@@ -410,7 +412,12 @@ async def main():
                     beauty_avg = beauty_sum/len(geomatch.image_urls)
                     print(f"Average attractiveness scores:\nComposite ({composite_avg}), Hotness ({hotness_avg}), Beauty score ({beauty_avg}), Attractiveness ({attractiveness_avg})")
                 is_hot = composite_sum != 0 and composite_avg >= score_threshold or attractiveness_avg >= score_threshold or hotness_avg >= score_threshold or beauty_avg >= score_threshold
-                if composite_sum != 0 and is_hot:
+                trans_words = ['trans', 'transgender', 'trans woman', 'trans man', 'nonbinary', 'genderqueer', 'genderfluid', 'two-spirit', 'agender', 'bigender']
+
+                # check if trans words are in bio
+                if geomatch.bio is not None and len([x for x in trans_words if x in geomatch.bio.lower()]) != 0:  
+                    session.dislike()
+                elif composite_sum != 0 and is_hot:
                     print(f"Score is above {score_threshold}, swiping right\n")
                     session.smart_like()
                 else:
